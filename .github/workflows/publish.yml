@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: release
+      name: testpypi
       url: https://test.pypi.org/p/<package-name>
 
     permissions:

@@ -1,6 +1,6 @@
 [project]
 name = "pyPowerSupplyController"
-version = "0.0.1"
+version = "0.0.3"
 authors = [
   { name="Joar Gjersund", email="joar@nofence.no" },
 ]

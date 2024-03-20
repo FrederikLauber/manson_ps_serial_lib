@@ -2,41 +2,21 @@
 
 ## Prerequisites
 
-### Installing Python3:
+### Installation:
+```
+$ python3 -m pip install pyPowerSupplyController
+```
 
-- Debian/Ubuntu
-
-	```
-	$ sudo apt-get install python3 python3-pip
-	```
-- macOS (tested on macOS 10.14 Mojave)  
-	Install [HomeBrew](https://brew.sh/index_de):
-
-	```
-	$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-	```
-
-	Install Python3:
-
-	```
-	$ brew install python3
-	```
-
-### Installing pySerial:
-
-see [pySerial Docs](https://pyserial.readthedocs.io/en/latest/pyserial.html#installation)
-
-- Debian/Ubuntu
-
-	```
-	$ sudo apt-get install python3-serial
-	```
-- macOS
-
-	```
-	$ python3 -m pip install pyserial
-	```
-
+### Usage example
+```
+import pyPowerSupplyController as ps
+instrumeent = ps.MansonInstrument()
+try:
+    instrumeent.open_port("/dev/cu.usbserial-0001")
+except ps.CouldNotConnectError:
+    print("could not connect to device")
+print(instrumeent.get_hw_model())
+```
 ## Compatible Power Supply models
 
 | Manson   | Specs             | B&K Precision (OEM) | Multicomp (OEM) | Peaktech (OEM) | Voltcraft (OEM) |

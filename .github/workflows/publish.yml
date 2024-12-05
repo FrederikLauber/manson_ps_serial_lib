@@ -27,6 +27,16 @@ jobs:
         name: python-package-distributions
         path: dist/
 
+  code-quality:
+    name: Check code quality
+    needs:
+      - build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Ruff
+      run: ruff check src
+
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI

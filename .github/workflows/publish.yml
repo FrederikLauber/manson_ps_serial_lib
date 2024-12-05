@@ -19,12 +19,6 @@ jobs:
         pip install
         build
         --user
-    - name: Install Dependencies
-      run: >-
-        python3 -m
-        pip install 
-        -r requirements.txt
-        --user
     - name: Build a binary wheel and a source tarball
       run: python3 -m build
     - name: Store the distribution packages
@@ -40,6 +34,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Install dependencies
+      run: >-
+        python3 -m
+        pip install 
+        -r requirements.txt
+        --user
+
     - name: Ruff
       run: ruff check src
 

@@ -19,3 +19,6 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/JoarGjersund/manson_ps_serial_lib"
 Issues = "https://github.com/JoarGjersund/manson_ps_serial_lib/issues"
+
+[tool.pytest.ini_options]
+pythonpath = "src/"

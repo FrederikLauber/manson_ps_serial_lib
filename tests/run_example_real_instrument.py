@@ -8,7 +8,7 @@ import argparse
 from serial.tools.list_ports import comports as pyser_get_comports
 import sys
 
-from pyPowerSupplyController_JoarGjersund.manson_instrument import MansonInstrument
+from pyPowerSupplyController.manson_instrument import MansonInstrument
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------

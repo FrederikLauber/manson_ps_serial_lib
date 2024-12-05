@@ -2,16 +2,11 @@
 # by TS, Dec 2020
 #
 
-try:
-	from .exceptions import InvalidInputDataError, TestFailedError
-	from .models import get_hw_model_id as models_get_hw_model_id, \
-			get_hw_specs as models_get_hw_specs
-	from .serializer import *
-except (ModuleNotFoundError, ImportError):
-	from exceptions import InvalidInputDataError, TestFailedError
-	from models import get_hw_model_id as models_get_hw_model_id, \
-			get_hw_specs as models_get_hw_specs
-	from serializer import *
+from pyPowerSupplyController.exceptions import InvalidInputDataError, TestFailedError
+from pyPowerSupplyController.models import (get_hw_model_id as models_get_hw_model_id,
+		     								get_hw_specs as models_get_hw_specs)
+from pyPowerSupplyController.serializer import *
+
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------

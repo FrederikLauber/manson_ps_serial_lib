@@ -1,49 +1,37 @@
 #
 # by TS, Dec 2020
 #
+from copy import deepcopy
 
-try:
-    from .mi_commands import *
-    from .exceptions import (
-        InvalidModelError,
-        NotConnectedError,
-        UnknownCommandError,
-        UnsupportedModelError,
-    )
-    from .models import (
-        build_spec_dict as models_build_spec_dict,
-        get_hw_model_id as models_get_hw_model_id,
-        get_hw_specs as models_get_hw_specs,
-        MODEL_SERIES_ID_HCS,
-        MODEL_SERIES_ID_NTP,
-        MODEL_SERIES_ID_SSP,
-        MODEL_SUBSERIES_ID_SSP80,
-        MODEL_SUBSERIES_ID_SSP81,
-        MODEL_SUBSERIES_ID_SSP83,
-        MODEL_SUBSERIES_ID_SSP90,
-    )
-    from .serializer import *
-except (ModuleNotFoundError, ImportError):
-    from src.pyPowerSupplyController_JoarGjersund.mi_commands import *
-    from exceptions import (
-        InvalidModelError,
-        NotConnectedError,
-        UnknownCommandError,
-        UnsupportedModelError,
-    )
-    from src.pyPowerSupplyController_JoarGjersund.models import (
-        build_spec_dict as models_build_spec_dict,
-        get_hw_model_id as models_get_hw_model_id,
-        get_hw_specs as models_get_hw_specs,
-        MODEL_SERIES_ID_HCS,
-        MODEL_SERIES_ID_NTP,
-        MODEL_SERIES_ID_SSP,
-        MODEL_SUBSERIES_ID_SSP80,
-        MODEL_SUBSERIES_ID_SSP81,
-        MODEL_SUBSERIES_ID_SSP83,
-        MODEL_SUBSERIES_ID_SSP90,
-    )
-    from src.pyPowerSupplyController_JoarGjersund.serializer import *
+from .mi_commands import (MICMD_GMOD, MICMD_GVER, MICMD_ENDS, MICMD_VOLT, \
+                                MICMD_GETD, MICMD_GETS, MICMD_GMIN, MICMD_GMAX, MICMD_SOUT, MICMD_GOUT, MICMD_GETM,
+                                MICMD_PROM, MICMD_GABC, MICMD_SISH, MICMD_GVSH,
+                                MICMD_RUNM, MICMD_SABC, MICMD_SOVP, MICMD_SOCP, MICMD_GOVP, MICMD_GOCP, MICMD_SVSH,
+                                MICMD_GISH, MICMD_SETD, MICMD_GCHA, MICMD_SCHA, MICMD_SESS, MICMD_CURR)
+
+from .serializer import (Serializer, SZR_OUTP_MODE_CV, SZR_RESP_OK_SUFFIX, SZR_VTYPE_IX, SZR_VTYPE_VOLT, SZR_VTYPE_CURR,
+                         SZR_VTYPE_SPECVOLT, SZR_VTYPE_SPECCURR, SZR_VTYPE_VARVOLT, SZR_VTYPE_VARCURR, SZR_VTYPE_MODE,
+                         SZR_VTYPE_STATE, SZR_VTYPE_RANGE)
+
+from .exceptions import (
+    InvalidModelError,
+    NotConnectedError,
+    UnknownCommandError,
+    UnsupportedModelError, InvalidInputDataError,
+)
+from .models import (
+    build_spec_dict as models_build_spec_dict,
+    get_hw_model_id as models_get_hw_model_id,
+    get_hw_specs as models_get_hw_specs,
+    MODEL_SERIES_ID_HCS,
+    MODEL_SERIES_ID_NTP,
+    MODEL_SERIES_ID_SSP,
+    MODEL_SUBSERIES_ID_SSP80,
+    MODEL_SUBSERIES_ID_SSP81,
+    MODEL_SUBSERIES_ID_SSP83,
+    MODEL_SUBSERIES_ID_SSP90,
+)
+
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -85,6 +73,38 @@ class EmulatedInstrumentSerial(object):
         self._modelSubSeries = None
         self._modelHwCmdSupp = None
         self._modelId = None
+
+        self._cmdStr2function = {
+            MICMD_GMOD: self._cmd_gmod,
+            MICMD_GVER: self._cmd_gver,
+            MICMD_ENDS: self._cmd_ends_or_sess,
+            MICMD_SESS: self._cmd_ends_or_sess,
+            MICMD_VOLT: self._cmd_volt_or_curr,
+            MICMD_CURR: self._cmd_volt_or_curr,
+            MICMD_GETD: self._cmd_getd,
+            MICMD_GETS: self._cmd_gets,
+            MICMD_GMIN: self._cmd_gmin_or_gmax,
+            MICMD_GMAX: self._cmd_gmin_or_gmax,
+            MICMD_SOUT: self._cmd_sout,
+            MICMD_GOUT: self._cmd_gout,
+            MICMD_GETM: self._cmd_getm,
+            MICMD_PROM: self._cmd_prom,
+            MICMD_GABC: self._cmd_gabc,
+            MICMD_RUNM: self._cmd_runm_or_sabc,
+            MICMD_SABC: self._cmd_runm_or_sabc,
+            MICMD_SOVP: self._cmd_sovp_or_socp,
+            MICMD_SOCP: self._cmd_sovp_or_socp,
+            MICMD_GOVP: self._cmd_govp_or_gocp,
+            MICMD_GOCP: self._cmd_govp_or_gocp,
+            MICMD_SVSH: self._cmd_svsh_or_sish,
+            MICMD_SISH: self._cmd_svsh_or_sish,
+            MICMD_GVSH: self._cmd_gvsh_or_gish,
+            MICMD_GISH: self._cmd_gvsh_or_gish,
+            MICMD_SETD: self._cmd_setd,
+            MICMD_GCHA: self._cmd_gcha,
+            MICMD_SCHA: self._cmd_scha,
+        }
+
         self.update_model_id(modelId)
 
     # --------------------------------------------------------------------------
@@ -214,47 +234,9 @@ class EmulatedInstrumentSerial(object):
         self._inpCargsStr = inpStr[4:] + SZR_RESP_OK_SUFFIX
         # print(" <- EIS.hi '%s:%s' -- " % (cmdStr, self._inpCargsStr))
         #
-        if cmdStr == MICMD_GMOD:
-            self._cmd_gmod()
-        elif cmdStr == MICMD_GVER:
-            self._cmd_gver()
-        elif cmdStr == MICMD_ENDS or cmdStr == MICMD_SESS:
-            self._cmd_ends_or_sess()
-        elif cmdStr == MICMD_VOLT or cmdStr == MICMD_CURR:
-            self._cmd_volt_or_curr()
-        elif cmdStr == MICMD_GETD:
-            self._cmd_getd()
-        elif cmdStr == MICMD_GETS:
-            self._cmd_gets()
-        elif cmdStr == MICMD_GMIN or cmdStr == MICMD_GMAX:
-            self._cmd_gmin_or_gmax()
-        elif cmdStr == MICMD_SOUT:
-            self._cmd_sout()
-        elif cmdStr == MICMD_GOUT:
-            self._cmd_gout()
-        elif cmdStr == MICMD_GETM:
-            self._cmd_getm()
-        elif cmdStr == MICMD_PROM:
-            self._cmd_prom()
-        elif cmdStr == MICMD_GABC:
-            self._cmd_gabc()
-        elif cmdStr == MICMD_RUNM or cmdStr == MICMD_SABC:
-            self._cmd_runm_or_sabc()
-        elif cmdStr == MICMD_SOVP or cmdStr == MICMD_SOCP:
-            self._cmd_sovp_or_socp()
-        elif cmdStr == MICMD_GOVP or cmdStr == MICMD_GOCP:
-            self._cmd_govp_or_gocp()
-        elif cmdStr == MICMD_SVSH or cmdStr == MICMD_SISH:
-            self._cmd_svsh_or_sish()
-        elif cmdStr == MICMD_GVSH or cmdStr == MICMD_GISH:
-            self._cmd_gvsh_or_gish()
-        elif cmdStr == MICMD_SETD:
-            self._cmd_setd()
-        elif cmdStr == MICMD_GCHA:
-            self._cmd_gcha()
-        elif cmdStr == MICMD_SCHA:
-            self._cmd_scha()
-        else:
+        try:
+            self._cmdStr2function[cmdStr]()
+        except KeyError:
             raise UnknownCommandError(cmdStr)
 
     def _append_output(self, outpStr):
@@ -302,15 +284,15 @@ class EmulatedInstrumentSerial(object):
             listValueTypes.append(SZR_VTYPE_SPECVOLT)
             listValueTypes.append(SZR_VTYPE_SPECCURR)
         elif (
-            self._modelSubSeries == MODEL_SUBSERIES_ID_SSP80
-            or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP81
-            or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP83
+                self._modelSubSeries == MODEL_SUBSERIES_ID_SSP80
+                or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP81
+                or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP83
         ):
             listValueTypes.append(SZR_VTYPE_VOLT)
             listValueTypes.append(SZR_VTYPE_CURR)
         elif (
-            self._modelSeries == MODEL_SERIES_ID_NTP
-            or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP90
+                self._modelSeries == MODEL_SERIES_ID_NTP
+                or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP90
         ):
             listValueTypes.append(SZR_VTYPE_VARVOLT)
             listValueTypes.append(SZR_VTYPE_VARCURR)
@@ -332,26 +314,23 @@ class EmulatedInstrumentSerial(object):
                 psIx = valArr[0]["val"]
         except InvalidInputDataError:
             return
-        #
-        outpStr = ""
-        valVolt = 0.0
-        valCurr = 0.0
+
         listValueTypes = []
         if self._modelSeries == MODEL_SERIES_ID_HCS or (
-            (
-                self._modelSubSeries == MODEL_SUBSERIES_ID_SSP81
-                or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP83
-            )
-            and psIx == 3
+                (
+                        self._modelSubSeries == MODEL_SUBSERIES_ID_SSP81
+                        or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP83
+                )
+                and psIx == 3
         ):
             listValueTypes.append(SZR_VTYPE_VOLT)
             listValueTypes.append(SZR_VTYPE_CURR)
             valVolt = self._get_state("preset_volt")
             valCurr = self._get_state("preset_curr")
         elif (
-            self._modelSubSeries == MODEL_SUBSERIES_ID_SSP80
-            or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP81
-            or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP83
+                self._modelSubSeries == MODEL_SUBSERIES_ID_SSP80
+                or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP81
+                or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP83
         ):
             listValueTypes.append(SZR_VTYPE_VOLT)
             listValueTypes.append(SZR_VTYPE_CURR)
@@ -365,8 +344,8 @@ class EmulatedInstrumentSerial(object):
             valVolt = valStateD["volt"]
             valCurr = valStateD["curr"]
         elif (
-            self._modelSeries == MODEL_SERIES_ID_NTP
-            or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP90
+                self._modelSeries == MODEL_SERIES_ID_NTP
+                or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP90
         ):
             listValueTypes.append(SZR_VTYPE_VARVOLT)
             listValueTypes.append(SZR_VTYPE_VARCURR)
@@ -451,7 +430,6 @@ class EmulatedInstrumentSerial(object):
         self._append_output("")
 
     def _cmd_govp_or_gocp(self):
-        outpStr = ""
         try:
             isVolt = self._inpCmdStr == MICMD_GOVP
             listValueTypes = [SZR_VTYPE_VOLT if isVolt else SZR_VTYPE_CURR]
@@ -501,8 +479,8 @@ class EmulatedInstrumentSerial(object):
                 presetIx = valArr[0]["val"]
                 saveAsPreset = True
             elif (
-                self._modelSubSeries == MODEL_SUBSERIES_ID_SSP81
-                or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP83
+                    self._modelSubSeries == MODEL_SUBSERIES_ID_SSP81
+                    or self._modelSubSeries == MODEL_SUBSERIES_ID_SSP83
             ):
                 presetIx = valArr[0]["val"]
                 saveAsPreset = presetIx != 3

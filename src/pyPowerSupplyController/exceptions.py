@@ -3,41 +3,51 @@
 #
 
 class InstrumentError(Exception):
-	pass
+    pass
+
 
 class CouldNotConnectError(InstrumentError):
-	def __init__(self, msg=""):
-		super().__init__("'%s'" % msg)
+    def __init__(self, msg=""):
+        super().__init__("'%s'" % msg)
+
 
 class FunctionNotSupportedForModelError(InstrumentError):
-	pass
+    pass
+
 
 class InvalidInputDataError(InstrumentError):
-	def __init__(self, valStr="", valType="n/a"):
-		super().__init__("'%s' (VT=%s)" % (valStr, valType))
+    def __init__(self, valStr="", valType="n/a"):
+        super().__init__("'%s' (VT=%s)" % (valStr, valType))
+
 
 class InvalidModelError(InstrumentError):
-	def __init__(self, msg=""):
-		super().__init__("'%s'" % msg)
+    def __init__(self, msg=""):
+        super().__init__("'%s'" % msg)
+
 
 class InvalidResponseError(InstrumentError):
-	def __init__(self, msg=""):
-		super().__init__("'%s'" % msg)
+    def __init__(self, msg=""):
+        super().__init__("'%s'" % msg)
+
 
 class InvalidTestType(InstrumentError):
-	def __init__(self, msg=""):
-		super().__init__("'%s'" % msg)
+    def __init__(self, msg=""):
+        super().__init__("'%s'" % msg)
+
 
 class NotConnectedError(InstrumentError):
-	pass
+    pass
+
 
 class TestFailedError(InstrumentError):
-	pass
+    pass
+
 
 class UnsupportedModelError(InstrumentError):
-	def __init__(self, msg=""):
-		super().__init__("'%s'" % msg)
+    def __init__(self, msg=""):
+        super().__init__("'%s'" % msg)
+
 
 class UnknownCommandError(InstrumentError):
-	def __init__(self, msg=""):
-		super().__init__("'%s'" % msg)
+    def __init__(self, msg=""):
+        super().__init__("'%s'" % msg)

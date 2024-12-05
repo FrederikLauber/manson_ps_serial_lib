@@ -1,4 +1,1 @@
 pyserial
-ruff
-pytest
-pytest-cov
